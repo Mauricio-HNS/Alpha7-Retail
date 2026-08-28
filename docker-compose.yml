@@ -5,10 +5,8 @@ services:
       POSTGRES_DB: alpha7_retail
       POSTGRES_USER: alpha7
       POSTGRES_PASSWORD: alpha7
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+    ports: ["5432:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U alpha7 -d alpha7_retail"]
       interval: 5s
@@ -16,15 +14,19 @@ services:
       retries: 10
 
   api:
-    build:
-      context: ./backend
+    build: ./backend
     environment:
       DATABASE_URL: postgresql+psycopg://alpha7:alpha7@postgres:5432/alpha7_retail
-    ports:
-      - "8000:8000"
+    ports: ["8000:8000"]
     depends_on:
       postgres:
         condition: service_healthy
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  frontend:
+    build: ./frontend
+    ports: ["3000:80"]
+    depends_on: [api]
 
 volumes:
   postgres_data:
